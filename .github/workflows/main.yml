@@ -1,0 +1,144 @@
+name: GKI Kernel Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      root:
+        description: "Root Method?"
+        type: choice
+        options: [ KSU, SukiSU ]
+        default: SukiSU
+      build_with_bazel:
+        description: "Build with bazel?"
+        type: boolean
+        default: false
+jobs:
+  build-gki:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Build Environment
+        run: |
+          KERNEL_ROOT="$GITHUB_WORKSPACE/kernel"
+          mkdir -p "$KERNEL_ROOT"
+
+          cat >> $GITHUB_ENV << EOF
+          DATE=$(date '+%Y%m%d_%H%M')
+          DEVICE=duchamp
+          DEFCONFIG=$KERNEL_ROOT/common/arch/arm64/configs/gki_defconfig
+          KERNEL_ROOT=$KERNEL_ROOT
+          ANYKERNEL3=$GITHUB_WORKSPACE/AnyKernel3
+          EOF
+
+          mkdir -p "$GITHUB_WORKSPACE/git-repo"
+          curl -L https://storage.googleapis.com/git-repo-downloads/repo -o "$GITHUB_WORKSPACE/git-repo/repo"
+          chmod 0755 "$GITHUB_WORKSPACE/git-repo/repo"
+          echo "$GITHUB_WORKSPACE/git-repo" >> "$GITHUB_PATH"
+      - name: Clone AnyKernel3
+        run: |
+          ANYKERNEL3_BRANCH="master"
+          git clone https://github.com/handingslider/AnyKernel3 -b "$ANYKERNEL3_BRANCH"
+          rm -rf AnyKernel3/.git
+      - name: Initialize and Sync Kernel Source
+        working-directory: ${{ env.KERNEL_ROOT }}
+        run: |
+          if ${{ inputs.build_with_bazel }}; then
+            repo init -u https://android.googlesource.com/kernel/manifest -b common-android14-6.1 --repo-rev=v2.16 --depth=1
+            repo --trace sync -c -j$(nproc --all) --fail-fast --no-tags --force-sync --no-clone-bundle
+          else
+            git clone --depth=1 https://android.googlesource.com/kernel/common -b android14-6.1 common
+          fi
+      - name: Add Root
+        working-directory: ${{ env.KERNEL_ROOT }}
+        run: |
+          if ${{ inputs.root == 'SukiSU'}}; then
+            curl -LSs 'https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh' | bash -s builtin
+          else
+            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
+          fi
+      - name: Integrate SUSFS
+        run: |
+          if ${{ inputs.root == 'SukiSU'}}; then
+            git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-android14-6.1 susfs
+          else
+            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android14-6.1 susfs
+          fi
+          cd susfs
+          if ${{ inputs.root == 'KSU'}}; then
+             cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU/
+             cd ${{ env.KERNEL_ROOT}}/KernelSU
+             patch -p1 < 10_enable_susfs_for_ksu.patch
+             cd "$GITHUB_WORKSPACE/susfs"
+          fi
+          SUSFS_VERSION="2.0.0"
+          cp ./kernel_patches/50_add_susfs_in_gki-android14-6.1.patch ${{ env.KERNEL_ROOT }}/common/
+          cp ./kernel_patches/fs/* ${{ env.KERNEL_ROOT }}/common/fs/
+          cp ./kernel_patches/include/linux/* ${{ env.KERNEL_ROOT }}/common/include/linux/
+          cd ${{ env.KERNEL_ROOT }}/common
+          patch -p1 < 50_add_susfs_in_gki-android14-6.1.patch || true
+          wget https://raw.githubusercontent.com/WildKernels/kernel_patches/refs/heads/main/ksu/susfs_fix_patches/v2.0.0/1_fix_base.c.patch
+          patch -p1 < 1_fix_base.c.patch
+      - name: Enable SUSFS
+        run: |
+          cat >> "$DEFCONFIG" << 'EOF'
+          CONFIG_KSU_SUSFS=y
+          CONFIG_KSU_SUSFS_SUS_PATH=y
+          CONFIG_KSU_SUSFS_SUS_MOUNT=y
+          CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y
+          CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y
+          CONFIG_KSU_SUSFS_SUS_KSTAT=y
+          CONFIG_KSU_SUSFS_TRY_UMOUNT=y
+          CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y
+          CONFIG_KSU_SUSFS_SPOOF_UNAME=y
+          CONFIG_KSU_SUSFS_ENABLE_LOG=y
+          CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
+          CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
+          CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
+          CONFIG_KSU_SUSFS_SUS_MAP=y
+          EOF
+      - name: Configuration
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          echo 'CONFIG_LOCALVERSION="-PigguVerse"' >> "$DEFCONFIG"
+          echo 'CONFIG_WERROR=n' >> "$DEFCONFIG"
+          if ${{ inputs.root == 'SukiSU'}}; then
+             echo "CONFIG_KPM=y" >> "$DEFCONFIG"
+          fi
+          rm -rf ./android/abi_gki_protected_exports_*
+          perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' ./BUILD.bazel
+          sed -i 's/check_defconfig//' ./build.config.gki
+      - name: Commit Changes
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Integrate KernelSU"
+      - name: Build Kernel
+        working-directory: ${{ env.KERNEL_ROOT }}
+        run: |
+          if ${{ inputs.build_with_bazel }}; then
+             tools/bazel build --config=fast --config=stamp --lto=thin //common:kernel_aarch64_dist
+          else
+             cp "$GITHUB_WORKSPACE/build.sh" "${{ env.KERNEL_ROOT }}/common"
+             cd "${{ env.KERNEL_ROOT }}/common"
+             ./build.sh
+          fi
+      - name: Copy image to AnyKernel3
+        run: |
+          if [ "${{ inputs.build_with_bazel }}" = "true" ]; then
+             IMAGE_PATH="$KERNEL_ROOT/bazel-out/k8-fastbuild/bin/common/kernel_aarch64/Image"
+          else
+             IMAGE_PATH="$KERNEL_ROOT/common/out/arch/arm64/boot/Image"
+          fi
+          cp "$IMAGE_PATH" "$ANYKERNEL3/Image"
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: PigguVerse_${{ env.DEVICE }}_${{ env.DATE }}
+          path: ./AnyKernel3/**
+          if-no-files-found: ignore
+          compression-level: 9
