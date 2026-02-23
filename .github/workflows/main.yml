@@ -94,7 +94,7 @@ jobs:
           perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' ./BUILD.bazel
           sed -i 's/check_defconfig//' ./build.config.gki
           if [[ "${{ inputs.multi_manager }}" == "true" ]]; then
-             cd $KERNEL_ROOT/KernelSU-Next/kernel
+             cd $KERNEL_ROOT/KernelSU-Next
              wget https://raw.githubusercontent.com/handingslider/PigguVerse/refs/heads/gki/ksun-add-more-managers-support.patch
              patch -p1 --forward < ksun-add-more-managers-support.patch
           fi
