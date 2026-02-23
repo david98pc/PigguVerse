@@ -116,6 +116,7 @@ jobs:
           rm -rf ./android/abi_gki_protected_exports_*
           perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' ./BUILD.bazel
           sed -i 's/check_defconfig//' ./build.config.gki
+          sed -i '/bad_version:/{:a;n;/return 0;/{s/return 0;/return 1;/;b};ba}' kernel/module/version.c
       - name: Commit Changes
         working-directory: ${{ env.KERNEL_ROOT }}/common
         run: |
