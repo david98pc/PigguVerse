@@ -97,6 +97,7 @@ jobs:
              cd drivers/kernelsu
              cp $GITHUB_WORKSPACE/ksun-add-more-managers-support.patch .
              patch -p1 --forward < ksun-add-more-managers-support.patch
+          fi
       - name: Commit Changes
         working-directory: ${{ env.KERNEL_ROOT }}/common
         run: |
