@@ -66,7 +66,7 @@ jobs:
           if [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "false" ]]; then
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
           elif [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "true" ]]; then
-            curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev_susfs
+            curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev-susfs
           else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
           fi
