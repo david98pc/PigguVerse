@@ -50,10 +50,10 @@ jobs:
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
           if ${{ inputs.build_with_bazel }}; then
-            repo init -u https://android.googlesource.com/kernel/manifest -b common-android14-6.1 --repo-rev=v2.16 --depth=1
+            repo init -u https://android.googlesource.com/kernel/manifest -b common-android14-6.1-lts --repo-rev=v2.16 --depth=1
             repo --trace sync -c -j$(nproc --all) --fail-fast --no-tags --force-sync --no-clone-bundle
           else
-            git clone --depth=1 https://android.googlesource.com/kernel/common -b android14-6.1 common
+            git clone --depth=1 https://android.googlesource.com/kernel/common -b android14-6.1-lts common
           fi
       - name: Add Root
         working-directory: ${{ env.KERNEL_ROOT }}
