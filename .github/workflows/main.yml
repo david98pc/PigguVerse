@@ -8,6 +8,10 @@ on:
         type: choice
         options: [ KSU, SukiSU ]
         default: SukiSU
+      susfs:
+        descrpition: "Include SUSFS?"
+        type: boolean
+        default: false
       build_with_bazel:
         description: "Build with bazel?"
         type: boolean
@@ -54,12 +58,15 @@ jobs:
       - name: Add Root
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          if ${{ inputs.root == 'SukiSU'}}; then
+          if [[ inputs.root == 'SukiSU' && inputs.susfs == true ]]; then
             curl -LSs 'https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh' | bash -s builtin
+          elif [[ inputs.root == 'SukiSU' && inputs.susfs == false ]]; then
+            curl -LSs 'https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh' | bash -s main
           else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
           fi
       - name: Integrate SUSFS
+        if: inputs.susfs == true
         run: |
           if ${{ inputs.root == 'SukiSU'}}; then
             git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-android14-6.1 susfs
@@ -80,6 +87,7 @@ jobs:
           cd ${{ env.KERNEL_ROOT }}/common
           patch -p1 < 50_add_susfs_in_gki-android14-6.1.patch || true
       - name: Enable SUSFS
+        if: inputs.susfs == true
         run: |
           cat >> "$DEFCONFIG" << 'EOF'
           CONFIG_KSU_SUSFS=y
