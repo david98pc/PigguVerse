@@ -6,10 +6,14 @@ on:
       root:
         description: "Root Method?"
         type: choice
-        options: [ KSU, SukiSU ]
+        options: [ KSU, KSUN ]
         default: SukiSU
       susfs:
         description: "Include SUSFS?"
+        type: boolean
+        default: true
+      multi_manager:
+        description: "Add MultiManager Support(Only for KSUN)?"
         type: boolean
         default: false
       build_with_bazel:
@@ -35,6 +39,7 @@ jobs:
           DEFCONFIG=$KERNEL_ROOT/common/arch/arm64/configs/gki_defconfig
           KERNEL_ROOT=$KERNEL_ROOT
           ANYKERNEL3=$GITHUB_WORKSPACE/AnyKernel3
+          KSUN_PATCHES=$GITHUB_WORKSPACE/kernel_patches
           EOF
 
           mkdir -p "$GITHUB_WORKSPACE/git-repo"
@@ -58,65 +63,39 @@ jobs:
       - name: Add Root
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          if [[ inputs.root == 'SukiSU' && inputs.susfs == true ]]; then
-            curl -LSs 'https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh' | bash -s builtin
-          elif [[ inputs.root == 'SukiSU' && inputs.susfs == false ]]; then
-            curl -LSs 'https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh' | bash -s main
+          if [[ inputs.root == 'KSUN' && inputs.susfs == false ]]; then
+            curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
+          elif [[ inputs.root == 'KSUN' && inputs.susfs == true ]]; then
+            curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev_susfs
           else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
           fi
       - name: Integrate SUSFS
         if: inputs.susfs == true
-        run: |
-          if ${{ inputs.root == 'SukiSU'}}; then
-            git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-android14-6.1 susfs
-          else
-            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android14-6.1 susfs
-          fi
+          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android14-6.1 susfs
           cd susfs
-          if ${{ inputs.root == 'KSU'}}; then
+          if [[ inputs.root == 'KSU']]
              cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU/
              cd ${{ env.KERNEL_ROOT}}/KernelSU
              patch -p1 < 10_enable_susfs_for_ksu.patch
              cd "$GITHUB_WORKSPACE/susfs"
           fi
-          SUSFS_VERSION="2.0.0"
           cp ./kernel_patches/50_add_susfs_in_gki-android14-6.1.patch ${{ env.KERNEL_ROOT }}/common/
           cp ./kernel_patches/fs/* ${{ env.KERNEL_ROOT }}/common/fs/
           cp ./kernel_patches/include/linux/* ${{ env.KERNEL_ROOT }}/common/include/linux/
           cd ${{ env.KERNEL_ROOT }}/common
           patch -p1 < 50_add_susfs_in_gki-android14-6.1.patch || true
-      - name: Enable SUSFS
-        if: inputs.susfs == true
-        run: |
-          cat >> "$DEFCONFIG" << 'EOF'
-          CONFIG_KSU_SUSFS=y
-          CONFIG_KSU_SUSFS_SUS_PATH=y
-          CONFIG_KSU_SUSFS_SUS_MOUNT=y
-          CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y
-          CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y
-          CONFIG_KSU_SUSFS_SUS_KSTAT=y
-          CONFIG_KSU_SUSFS_TRY_UMOUNT=y
-          CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y
-          CONFIG_KSU_SUSFS_SPOOF_UNAME=y
-          CONFIG_KSU_SUSFS_ENABLE_LOG=y
-          CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
-          CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
-          CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
-          CONFIG_KSU_SUSFS_SUS_MAP=y
-          EOF
       - name: Configuration
         working-directory: ${{ env.KERNEL_ROOT }}/common
         run: |
           echo 'CONFIG_LOCALVERSION="-PigguVerse"' >> "$DEFCONFIG"
-          echo 'CONFIG_WERROR=n' >> "$DEFCONFIG"
-          if ${{ inputs.root == 'SukiSU'}}; then
-             echo "CONFIG_KPM=y" >> "$DEFCONFIG"
-          fi
           rm -rf ./android/abi_gki_protected_exports_*
           perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' ./BUILD.bazel
           sed -i 's/check_defconfig//' ./build.config.gki
-          sed -i '/bad_version:/{:a;n;/return 0;/{s/return 0;/return 1;/;b};ba}' kernel/module/version.c
+          if [[ inputs.multi_manager == true ]]; then
+             cd drivers/kernelsu
+             cp $GITHUB_WORKSPACE/ksun-add-more-managers-support.patch .
+             patch -p1 --forward < ksun-add-more-managers-support.patch
       - name: Commit Changes
         working-directory: ${{ env.KERNEL_ROOT }}/common
         run: |
