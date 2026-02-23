@@ -75,7 +75,7 @@ jobs:
         run: |
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android14-6.1 susfs
           cd susfs
-          if [[ inputs.root == 'KSU' ]]
+          if [[ inputs.root == 'KSU' ]]; then
              cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU/
              cd ${{ env.KERNEL_ROOT}}/KernelSU
              patch -p1 < 10_enable_susfs_for_ksu.patch
