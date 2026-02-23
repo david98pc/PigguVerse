@@ -7,7 +7,7 @@ on:
         description: "Root Method?"
         type: choice
         options: [ KSU, KSUN ]
-        default: SukiSU
+        default: KSUN
       susfs:
         description: "Include SUSFS?"
         type: boolean
@@ -63,9 +63,9 @@ jobs:
       - name: Add Root
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          if [[ inputs.root == 'KSUN' && inputs.susfs == false ]]; then
+          if [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "false" ]]; then
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
-          elif [[ inputs.root == 'KSUN' && inputs.susfs == true ]]; then
+          elif [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "true" ]]; then
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev_susfs
           else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
