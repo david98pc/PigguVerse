@@ -9,7 +9,7 @@ on:
         options: [ KSU, SukiSU ]
         default: SukiSU
       susfs:
-        descrpition: "Include SUSFS?"
+        description: "Include SUSFS?"
         type: boolean
         default: false
       build_with_bazel:
