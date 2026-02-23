@@ -79,8 +79,6 @@ jobs:
           cp ./kernel_patches/include/linux/* ${{ env.KERNEL_ROOT }}/common/include/linux/
           cd ${{ env.KERNEL_ROOT }}/common
           patch -p1 < 50_add_susfs_in_gki-android14-6.1.patch || true
-          wget https://raw.githubusercontent.com/WildKernels/kernel_patches/refs/heads/main/ksu/susfs_fix_patches/v2.0.0/1_fix_base.c.patch
-          patch -p1 < 1_fix_base.c.patch
       - name: Enable SUSFS
         run: |
           cat >> "$DEFCONFIG" << 'EOF'
