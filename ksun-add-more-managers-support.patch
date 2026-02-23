@@ -1,8 +1,8 @@
 diff --git a/kernel/Kbuild b/kernel/Kbuild
-index abd1380..6274d22 100644
+index e801a6c0..a0e6a084 100644
 --- a/kernel/Kbuild
 +++ b/kernel/Kbuild
-@@ -73,8 +73,8 @@ ccflags-y += -DKSU_VERSION_TAG=\"$(KSU_VERSION_TAG_FALLBACK)\"
+@@ -71,8 +71,8 @@ ccflags-y += -DKSU_VERSION_TAG=\"$(KSU_VERSION_TAG_FALLBACK)\"
  endif
  
  ifndef KSU_NEXT_MANAGER_LIST
@@ -13,3 +13,4 @@ index abd1380..6274d22 100644
  endif
  
  ifdef KSU_MANAGER_PACKAGE
+
