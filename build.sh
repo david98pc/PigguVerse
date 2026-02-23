@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# Compile script for Hydrogen kernel
+# Brought to you by rio004 
+#
+
+# Date/Time
+SECONDS=0
+DATE=$(date '+%Y%m%d-%H%M')
+
+# Device
+DEVICE="duchamp"
+DEFCONFIG="gki_defconfig"
+
+# Install the requirements for building the kernel when running the script for the first time
+sudo apt update && sudo apt install -y git device-tree-compiler lz4 xz-utils zlib1g-dev openjdk-17-jdk gcc g++ python3 python-is-python3 p7zip-full android-sdk-libsparse-utils erofs-utils \
+        default-jdk git gnupg flex bison gperf build-essential zip curl libc6-dev libncurses-dev libx11-dev libreadline-dev libgl1 libgl1-mesa-dev \
+        python3 make sudo gcc g++ bc grep tofrodos python3-markdown libxml2-utils xsltproc zlib1g-dev python-is-python3 libc6-dev libtinfo6 \
+        make cpio kmod openssl libelf-dev pahole libssl-dev libarchive-tools zstd --fix-missing && touch .requirements
+
+# Some additional info
+echo -e "Building for: $DEVICE\n"
+
+# Ensure the toolchain is available
+TC_DIR="$HOME/toolchains/neutron-clang"
+CURRENT_DIR=$(pwd)
+if [ ! -d "$TC_DIR" ]; then
+    mkdir -p $TC_DIR
+    cd $TC_DIR
+    bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S=11032023
+    cd $CURRENT_DIR
+fi
+export PATH="$TC_DIR/bin:$PATH"
+
+# Set cross-compile environment variables
+export BUILD_CC="$TC_DIR/bin/clang"
+
+# Build options for the kernel
+export BUILD_OPTIONS="
+-C $CURRENT_DIR \
+O=$CURRENT_DIR/out \
+-j$(nproc) \
+ARCH=arm64 \
+CROSS_COMPILE=aarch64-linux-gnu- \
+CLANG_TRIPLE=aarch64-linux-gnu- \
+CC=${BUILD_CC} \
+LLVM=1 \
+LLVM_IAS=1 \
+AR=$TC_DIR/bin/llvm-ar \
+NM=$TC_DIR/bin/llvm-nm \
+LD=$TC_DIR/bin/ld.lld \
+STRIP=$TC_DIR/bin/llvm-strip \
+OBJCOPY=$TC_DIR/bin/llvm-objcopy \
+OBJDUMP=$TC_DIR/bin/llvm-objdump \
+READELF=$TC_DIR/bin/llvm-readelf \
+HOSTCC=$TC_DIR/bin/clang \
+HOSTCXX=$TC_DIR/bin/clang++ \
+KBUILD_BUILD_USER=HandingSlider
+KBUILD_BUILD_HOST=Server
+"
+mkdir -p out
+make ${BUILD_OPTIONS} $DEFCONFIG
+
+echo -e "\nStarting compilation...\n"
+make ${BUILD_OPTIONS} Image
+
