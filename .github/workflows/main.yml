@@ -86,6 +86,21 @@ jobs:
           cp ./kernel_patches/include/linux/* ${{ env.KERNEL_ROOT }}/common/include/linux/
           cd ${{ env.KERNEL_ROOT }}/common
           patch -p1 < 50_add_susfs_in_gki-android14-6.1.patch || true
+      - name: Enable susfs
+        if: inputs.susfs
+        run: |
+          cat >> "$DEFCONFIG" << 'EOF'
+          CONFIG_KSU_SUSFS=y
+          CONFIG_KSU_SUSFS_SUS_PATH=y
+          CONFIG_KSU_SUSFS_SUS_MOUNT=y
+          CONFIG_KSU_SUSFS_SUS_KSTAT=y
+          CONFIG_KSU_SUSFS_SPOOF_UNAME=y
+          CONFIG_KSU_SUSFS_ENABLE_LOG=y
+          CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
+          CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
+          CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
+          CONFIG_KSU_SUSFS_SUS_MAP=y
+          EOF
       - name: Configuration
         working-directory: ${{ env.KERNEL_ROOT }}/common
         run: |
