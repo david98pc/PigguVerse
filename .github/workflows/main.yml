@@ -72,6 +72,7 @@ jobs:
           fi
       - name: Integrate SUSFS
         if: inputs.susfs == true
+        run: |
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android14-6.1 susfs
           cd susfs
           if [[ inputs.root == 'KSU']]
