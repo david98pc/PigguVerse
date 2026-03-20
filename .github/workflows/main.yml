@@ -64,7 +64,7 @@ jobs:
           elif [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "true" ]]; then
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev-susfs
           elif [[ "${{ inputs.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "true" ]]; then
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs_features
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
           elif [[ "${{ inputs.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "false" ]]; then
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
           else
