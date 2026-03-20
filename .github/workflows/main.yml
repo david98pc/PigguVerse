@@ -6,8 +6,8 @@ on:
       root:
         description: "Root Method?"
         type: choice
-        options: [ KSU, KSUN ]
-        default: KSUN
+        options: [ KSU, KSUN, SukiSU ]
+        default: SukiSU
       susfs:
         description: "Include SUSFS?"
         type: boolean
@@ -15,7 +15,7 @@ on:
       build_with_bazel:
         description: "Build with bazel?"
         type: boolean
-        default: false
+        default: true
 jobs:
   build-gki:
     runs-on: ubuntu-latest
@@ -63,6 +63,10 @@ jobs:
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
           elif [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "true" ]]; then
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev-susfs
+          elif [[ "${{ inputs.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "true" ]]; then
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs_features
+          elif [[ "${{ inputs.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "false" ]]; then
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
           else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
           fi
