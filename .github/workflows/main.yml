@@ -12,10 +12,6 @@ on:
         description: "Include SUSFS?"
         type: boolean
         default: true
-      multi_manager:
-        description: "Add MultiManager Support(Only for KSUN)?"
-        type: boolean
-        default: false
       build_with_bazel:
         description: "Build with bazel?"
         type: boolean
@@ -108,11 +104,6 @@ jobs:
           rm -rf ./android/abi_gki_protected_exports_*
           perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' ./BUILD.bazel
           sed -i 's/check_defconfig//' ./build.config.gki
-          if [[ "${{ inputs.multi_manager }}" == "true" ]]; then
-             cd $KERNEL_ROOT/KernelSU-Next
-             wget https://raw.githubusercontent.com/handingslider/PigguVerse/refs/heads/gki/ksun-add-more-managers-support.patch
-             patch -p1 --forward < ksun-add-more-managers-support.patch
-          fi
       - name: Commit Changes
         working-directory: ${{ env.KERNEL_ROOT }}/common
         run: |
