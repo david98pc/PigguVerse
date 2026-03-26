@@ -68,11 +68,7 @@ jobs:
         run: |
           case "${{ matrix.root }}" in
             "KSUN")
-              if [[ "${{ inputs.susfs }}" == "true" ]]; then
-                curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev-susfs
-              else
-                curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
-              fi
+                curl -LSs 'https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
               ;;
             "SukiSU")
               if [[ "${{ inputs.susfs }}" == "true" ]]; then
@@ -94,6 +90,17 @@ jobs:
              cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU/
              cd ${{ env.KERNEL_ROOT}}/KernelSU
              patch -p1 < 10_enable_susfs_for_ksu.patch
+             cd "$GITHUB_WORKSPACE/susfs"
+          fi
+          if [[ "${{ matrix.root }}" == "KSUN" ]]; then
+             git clone https://github.com/WildKernels/kernel_patches.git ${{ env.KSUN_PATCHES }}
+             cd ${{ env.KSUN_PATCHES }}/next/susfs_fix_patches/stable/v2.1.0
+             for patch in *.patch; do
+               cp "$patch" "${{ env.KERNEL_ROOT }}/KernelSU-Next/"
+               cd "${{ env.KERNEL_ROOT }}/KernelSU-Next"
+               patch -p1 < "$patch" || true
+               cd -
+             done
              cd "$GITHUB_WORKSPACE/susfs"
           fi
           cp ./kernel_patches/50_add_susfs_in_gki-android14-6.1.patch ${{ env.KERNEL_ROOT }}/common/
