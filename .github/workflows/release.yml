@@ -30,12 +30,26 @@ jobs:
           mkdir -p release_files
           find artifacts -type f -exec cp {} release_files/ \;
 
+      - name: Set Release Information
+        run: |
+          echo "RELEASE_DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
+          echo "KERNEL_BRANCH=android14-6.1-lts" >> $GITHUB_ENV
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: release_files/*
           tag_name: build-${{ github.run_id }}
-          name: Build ${{ github.run_id }}
+          name: PigguVerse ${{ env.RELEASE_DATE }}
+          body: |
+            Kernel Branch: ${{ env.KERNEL_BRANCH }}
+
+            ### Root Managers
+            - [SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/latest)
+            - [KernelSU](https://github.com/tiann/KernelSU/releases/latest)
+
+            ### SUSFS Module
+            - [susfs4ksu module](https://github.com/sidex15/susfs4ksu-module/releases/latest)
           draft: false
           prerelease: false
         env:
