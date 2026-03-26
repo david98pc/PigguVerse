@@ -66,17 +66,25 @@ jobs:
       - name: Add Root
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          if [[ "${{ matrix.root }}" == "KSUN" && "${{ inputs.susfs }}" == "false" ]]; then
-            curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
-          elif [[ "${{ matrix.root }}" == "KSUN" && "${{ inputs.susfs }}" == "true" ]]; then
-            curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev-susfs
-          elif [[ "${{ matrix.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "true" ]]; then
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
-          elif [[ "${{ matrix.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "false" ]]; then
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
-          else
-            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
-          fi
+          case "${{ matrix.root }}" in
+            "KSUN")
+              if [[ "${{ inputs.susfs }}" == "true" ]]; then
+                curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev-susfs
+              else
+                curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
+              fi
+              ;;
+            "SukiSU")
+              if [[ "${{ inputs.susfs }}" == "true" ]]; then
+                curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
+              else
+                curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
+              fi
+              ;;
+            *)
+              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
+              ;;
+          esac
       - name: Integrate SUSFS
         if: inputs.susfs == true
         run: |
