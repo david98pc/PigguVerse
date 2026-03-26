@@ -148,12 +148,3 @@ jobs:
           path: ./AnyKernel3/**
           if-no-files-found: ignore
           compression-level: 9
-
-      - name: Upload boot.img
-        uses: actions/upload-artifact@v4
-        if: matrix.build_with_bazel == true
-        with:
-          name: boot_${{ matrix.root }}_${{ matrix.label }}
-          path: ${{ env.KERNEL_ROOT }}/bazel-out/k8-fastbuild/bin/common/kernel_aarch64_gki_artifacts/boot*.img
-          if-no-files-found: ignore
-          compression-level: 9
