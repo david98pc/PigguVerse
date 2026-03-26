@@ -95,7 +95,7 @@ jobs:
           if [[ "${{ matrix.root }}" == "KSUN" ]]; then
              cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU-Next
              cd ${{ env.KERNEL_ROOT}}/KernelSU-Next
-             patch -p1 < 10_enable_susfs_for_ksu.patch
+             patch -p1 < 10_enable_susfs_for_ksu.patch || true
              cd "$GITHUB_WORKSPACE/susfs"
              git clone https://github.com/WildKernels/kernel_patches.git ${{ env.KSUN_PATCHES }}
              cd ${{ env.KSUN_PATCHES }}/next/susfs_fix_patches/stable/v2.1.0
