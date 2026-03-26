@@ -7,6 +7,11 @@ on:
         description: "Include SUSFS?"
         type: boolean
         default: true
+  workflow_call:
+    inputs:
+      susfs:
+        type: boolean
+        default: true
 
 jobs:
   build-gki:
