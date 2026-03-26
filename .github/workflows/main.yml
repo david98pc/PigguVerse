@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 180
     strategy:
       matrix:
-        root: [KSU, KSUN, SukiSU]
+        root: [KSU, SukiSU]
         build_with_bazel: [true, false]
         include:
           - build_with_bazel: true
@@ -67,9 +67,6 @@ jobs:
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
           case "${{ matrix.root }}" in
-            "KSUN")
-                curl -LSs 'https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
-              ;;
             "SukiSU")
               if [[ "${{ inputs.susfs }}" == "true" ]]; then
                 curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
@@ -90,21 +87,6 @@ jobs:
              cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU/
              cd ${{ env.KERNEL_ROOT}}/KernelSU
              patch -p1 < 10_enable_susfs_for_ksu.patch
-             cd "$GITHUB_WORKSPACE/susfs"
-          fi
-          if [[ "${{ matrix.root }}" == "KSUN" ]]; then
-             cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU-Next
-             cd ${{ env.KERNEL_ROOT}}/KernelSU-Next
-             patch -p1 < 10_enable_susfs_for_ksu.patch || true
-             cd "$GITHUB_WORKSPACE/susfs"
-             git clone https://github.com/WildKernels/kernel_patches.git ${{ env.KSUN_PATCHES }}
-             cd ${{ env.KSUN_PATCHES }}/next/susfs_fix_patches/stable/v2.1.0
-             for patch in *.patch; do
-               cp "$patch" "${{ env.KERNEL_ROOT }}/KernelSU-Next/"
-               cd "${{ env.KERNEL_ROOT }}/KernelSU-Next"
-               patch -p1 < "$patch" || true
-               cd -
-             done
              cd "$GITHUB_WORKSPACE/susfs"
           fi
           cp ./kernel_patches/50_add_susfs_in_gki-android14-6.1.patch ${{ env.KERNEL_ROOT }}/common/
