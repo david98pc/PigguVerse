@@ -3,23 +3,25 @@ name: GKI Kernel Build
 on:
   workflow_dispatch:
     inputs:
-      root:
-        description: "Root Method?"
-        type: choice
-        options: [ KSU, KSUN, SukiSU ]
-        default: SukiSU
       susfs:
         description: "Include SUSFS?"
         type: boolean
         default: true
-      build_with_bazel:
-        description: "Build with bazel?"
-        type: boolean
-        default: true
+
 jobs:
   build-gki:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    strategy:
+      matrix:
+        root: [KSU, KSUN, SukiSU]
+        build_with_bazel: [true, false]
+        include:
+          - build_with_bazel: true
+            label: "Hyper"
+          - build_with_bazel: false
+            label: "AOSP"
+      fail-fast: false
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -50,7 +52,7 @@ jobs:
       - name: Initialize and Sync Kernel Source
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          if ${{ inputs.build_with_bazel }}; then
+          if ${{ matrix.build_with_bazel }}; then
             repo init -u https://android.googlesource.com/kernel/manifest -b common-android14-6.1-lts --repo-rev=v2.16 --depth=1
             repo --trace sync -c -j$(nproc --all) --fail-fast --no-tags --force-sync --no-clone-bundle
           else
@@ -59,13 +61,13 @@ jobs:
       - name: Add Root
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          if [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "false" ]]; then
+          if [[ "${{ matrix.root }}" == "KSUN" && "${{ inputs.susfs }}" == "false" ]]; then
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev/kernel/setup.sh' | bash -s dev
-          elif [[ "${{ inputs.root }}" == "KSUN" && "${{ inputs.susfs }}" == "true" ]]; then
+          elif [[ "${{ matrix.root }}" == "KSUN" && "${{ inputs.susfs }}" == "true" ]]; then
             curl -LSs 'https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh' | bash -s dev-susfs
-          elif [[ "${{ inputs.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "true" ]]; then
+          elif [[ "${{ matrix.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "true" ]]; then
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
-          elif [[ "${{ inputs.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "false" ]]; then
+          elif [[ "${{ matrix.root }}" == "SukiSU" && "${{ inputs.susfs }}" == "false" ]]; then
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
           else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
@@ -75,7 +77,7 @@ jobs:
         run: |
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android14-6.1 susfs
           cd susfs
-          if [[ inputs.root == 'KSU' ]]; then
+          if [[ "${{ matrix.root }}" == "KSU" ]]; then
              cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ${{ env.KERNEL_ROOT }}/KernelSU/
              cd ${{ env.KERNEL_ROOT}}/KernelSU
              patch -p1 < 10_enable_susfs_for_ksu.patch
@@ -118,7 +120,7 @@ jobs:
       - name: Build Kernel
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          if ${{ inputs.build_with_bazel }}; then
+          if ${{ matrix.build_with_bazel }}; then
              tools/bazel build --config=fast --config=stamp --lto=thin //common:kernel_aarch64_dist
           else
              cp "$GITHUB_WORKSPACE/build.sh" "${{ env.KERNEL_ROOT }}/common"
@@ -127,7 +129,7 @@ jobs:
           fi
       - name: Copy image to AnyKernel3
         run: |
-          if [ "${{ inputs.build_with_bazel }}" = "true" ]; then
+          if [ "${{ matrix.build_with_bazel }}" = "true" ]; then
              IMAGE_PATH="$KERNEL_ROOT/bazel-out/k8-fastbuild/bin/common/kernel_aarch64/Image"
           else
              IMAGE_PATH="$KERNEL_ROOT/common/out/arch/arm64/boot/Image"
@@ -136,16 +138,16 @@ jobs:
       - name: Upload AnyKernel3
         uses: actions/upload-artifact@v4
         with:
-          name: PigguVerse_${{ env.DEVICE }}_${{ env.DATE }}
+          name: PigguVerse-${{ matrix.root }}-${{ matrix.label }}-${{ env.DATE }}
           path: ./AnyKernel3/**
           if-no-files-found: ignore
           compression-level: 9
 
       - name: Upload boot.img
         uses: actions/upload-artifact@v4
-        if: inputs.build_with_bazel == true
+        if: matrix.build_with_bazel == true
         with:
-          name: boot
+          name: boot_${{ matrix.root }}_${{ matrix.label }}
           path: ${{ env.KERNEL_ROOT }}/bazel-out/k8-fastbuild/bin/common/kernel_aarch64_gki_artifacts/boot*.img
           if-no-files-found: ignore
           compression-level: 9
