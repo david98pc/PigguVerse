@@ -108,6 +108,15 @@ jobs:
           CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
           CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
           CONFIG_KSU_SUSFS_SUS_MAP=y
+          # Universal Performance Tuning
+          CONFIG_TMPFS_XATTR=y
+          CONFIG_TMPFS_POSIX_ACL=y
+          CONFIG_HZ_480=y
+          CONFIG_HZ=480
+          CONFIG_CPU_FREQ=y
+          CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+          CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+          CONFIG_DEVFREQ_GOV_PERFORMANCE=y
           EOF
       - name: Configuration
         working-directory: ${{ env.KERNEL_ROOT }}/common
